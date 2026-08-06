@@ -55,7 +55,15 @@ export function auctionSse() {
 
 export function notificationSse(data) {
   const i = (__VU - 1) % data.tickets.length;
-  sse.open(`${baseUrl}/api/users/${data.userIds[i]}/notifications/stream?ticket=${encodeURIComponent(data.tickets[i])}`, {headers: {Accept: 'text/event-stream'}, tags: {name: 'notification_sse'}}, client => {
+  const token = data.tokens[i];
+  const ticketResponse = http.post(`${baseUrl}/api/sse/tickets`, null, {
+    headers: {Authorization: `Bearer ${token}`, Accept: 'application/json'},
+    responseCallback: http.expectedStatuses(200),
+    tags: {name: 'notification_sse_ticket'},
+  });
+  if (ticketResponse.status !== 200) return;
+  const ticket = ticketResponse.json('ticket');
+  sse.open(`${baseUrl}/api/users/${data.userIds[i]}/notifications/stream?ticket=${encodeURIComponent(ticket)}`, {headers: {Accept: 'text/event-stream'}, tags: {name: 'notification_sse'}}, client => {
     client.on('open', () => notificationSseOk.add(true));
     client.on('event', () => notificationEvents.add(1));
     client.on('error', () => notificationSseOk.add(false));
