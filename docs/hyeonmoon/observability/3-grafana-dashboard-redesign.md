@@ -19,9 +19,14 @@ Four Golden Signals(Latency/Traffic/Errors/Saturation) 프레임워크로 재확
 
 ### 1. Latency (지연)
 
-- 카테고리별(인증/입찰쓰기/bid-context/일반조회) p95·p99를 **성공(2xx)과
-  실패(5xx) 레이턴시를 분리**해서 나란히 표시 — `http_server_requests_seconds_bucket`에
+- 카테고리별(인증/bid-context/일반조회) p95·p99를 **성공(2xx)과 실패(5xx)
+  레이턴시를 분리**해서 나란히 표시 — `http_server_requests_seconds_bucket`에
   이미 `status` 라벨이 있어 쿼리만 바꾸면 됨, 코드 변경 불필요.
+- **입찰 쓰기는 2xx/5xx 이분법이 아니라 상태코드별(201/400/409/500)로 전부
+  따로** 표시한다 — 400도 락 획득 이후에 거부되는 구조라 락 경합 시
+  201과 레이턴시가 크게 안 벌어질 수 있어, 뭉치면 성공 경로의 진짜 비용이
+  희석돼 보인다. 근거는 [`1-slo-error-budget.md`](1-slo-error-budget.md)의
+  "입찰 쓰기 — 상태코드별 레이턴시" 참고.
 - SSE 연결 수립 시간, SSE 이벤트 end-to-end 전달 지연(문서 2에서 추가된
   메트릭).
 - 패널마다 [`1-slo-error-budget.md`](1-slo-error-budget.md) 목표치를 임계선으로
