@@ -1,11 +1,14 @@
 package com.dbidding.wallet.sse;
 
+import com.dbidding.sse.metrics.SseConnectionCloseMetrics.CloseReason;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -22,13 +25,19 @@ public class WalletSseConnectionManager {
     private final ConcurrentMap<Integer, Set<SseEmitter>> emittersByUserId = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper;
     private final TaskExecutor sendExecutor;
+    private final WalletSseMetrics metrics;
+    private final Supplier<Number> connectionCountSupplier;
 
     public WalletSseConnectionManager(
             ObjectMapper objectMapper,
-            @Qualifier("walletSseTaskExecutor") TaskExecutor sendExecutor
+            @Qualifier("walletSseTaskExecutor") TaskExecutor sendExecutor,
+            WalletSseMetrics metrics
     ) {
         this.objectMapper = objectMapper;
         this.sendExecutor = sendExecutor;
+        this.metrics = metrics;
+        this.connectionCountSupplier = this::totalConnectionCount;
+        metrics.registerConnectionGauge(connectionCountSupplier);
     }
 
     public SseEmitter connect(Integer userId) {
@@ -36,12 +45,29 @@ public class WalletSseConnectionManager {
     }
 
     SseEmitter register(Integer userId, SseEmitter emitter) {
+        Timer.Sample connectSample = metrics.startConnect();
+        metrics.trackConnectionStart(emitter);
         emittersByUserId.computeIfAbsent(userId, ignored -> ConcurrentHashMap.newKeySet()).add(emitter);
-        emitter.onCompletion(() -> remove(userId, emitter));
-        emitter.onTimeout(() -> removeAndComplete(userId, emitter));
-        emitter.onError(error -> removeAndComplete(userId, emitter));
-        send(userId, emitter, SseEmitter.event().name("connected").reconnectTime(3_000L).data("connected"));
+        emitter.onCompletion(() -> {
+            metrics.recordConnectionClosed(emitter, CloseReason.COMPLETION);
+            remove(userId, emitter);
+        });
+        emitter.onTimeout(() -> {
+            metrics.recordConnectionClosed(emitter, CloseReason.TIMEOUT);
+            removeAndComplete(userId, emitter);
+        });
+        emitter.onError(error -> {
+            metrics.recordConnectionClosed(emitter, CloseReason.ERROR);
+            removeAndComplete(userId, emitter);
+        });
+        if (send(userId, emitter, SseEmitter.event().name("connected").reconnectTime(3_000L).data("connected"))) {
+            metrics.finishConnect(connectSample);
+        }
         return emitter;
+    }
+
+    public int totalConnectionCount() {
+        return emittersByUserId.values().stream().mapToInt(Set::size).sum();
     }
 
     public void push(Integer userId, WalletSsePayload payload) {
@@ -71,12 +97,16 @@ public class WalletSseConnectionManager {
         }
     }
 
-    private void send(Integer userId, SseEmitter emitter, SseEmitter.SseEventBuilder event) {
+    private boolean send(Integer userId, SseEmitter emitter, SseEmitter.SseEventBuilder event) {
         try {
             emitter.send(event);
         } catch (IOException | IllegalStateException exception) {
+            metrics.recordSendFailure();
+            metrics.recordConnectionClosed(emitter, CloseReason.SEND_FAILURE);
             removeAndComplete(userId, emitter);
+            return false;
         }
+        return true;
     }
 
     private void removeAndComplete(Integer userId, SseEmitter emitter) {
