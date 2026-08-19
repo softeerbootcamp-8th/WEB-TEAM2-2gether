@@ -8,10 +8,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.dbidding.auction.bid.AuctionCloseData;
-import com.dbidding.auction.bid.BidCommand;
-import com.dbidding.auction.bid.BidEventData;
-import com.dbidding.auction.bid.BidExecutionResult;
+import com.dbidding.auction.bid.dto.AuctionCloseData;
+import com.dbidding.auction.bid.dto.BidCommand;
+import com.dbidding.auction.bid.dto.BidEventData;
+import com.dbidding.auction.bid.dto.BidExecutionResult;
 import com.dbidding.auction.bid.BidExecutor;
 import com.dbidding.auction.domain.AuctionStatus;
 import com.dbidding.auction.domain.BidStatus;
@@ -23,8 +23,8 @@ import com.dbidding.auction.event.BidPlacedEvent;
 import com.dbidding.auction.metrics.AuctionMetrics;
 import com.dbidding.auction.sse.AuctionStreamPublisher;
 import com.dbidding.card.service.CardService;
-import com.dbidding.order.OrderService;
-import com.dbidding.auction.port.ImageUploadPort;
+import com.dbidding.order.service.OrderService;
+import com.dbidding.upload.adapter.AuctionImageUploadAdapter;
 import com.dbidding.auction.repository.AuctionImageRepository;
 import com.dbidding.auction.repository.AuctionRepository;
 import com.dbidding.auction.repository.BidRepository;
@@ -56,7 +56,7 @@ class AuctionCommandServiceBidEventTest {
     @Mock
     private WalletService walletService;
     @Mock
-    private ImageUploadPort imageUploadPort;
+    private AuctionImageUploadAdapter imageUploadAdapter;
     @Mock
     private AuctionEventPublisher auctionEventPublisher;
     @Mock
@@ -80,7 +80,7 @@ class AuctionCommandServiceBidEventTest {
                 auctionImageRepository,
                 bidRepository,
                 walletService,
-                imageUploadPort,
+                imageUploadAdapter,
                 auctionEventPublisher,
                 auctionStreamPublisher,
                 cardService,

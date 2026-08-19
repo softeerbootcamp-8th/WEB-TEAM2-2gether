@@ -3,12 +3,15 @@ package com.dbidding.auction.bid;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.dbidding.auction.bid.dblock.DbBidExecutor;
+import com.dbidding.auction.bid.redis.RedisBidExecutor;
+import com.dbidding.auction.bid.redis.RedisBidLuaConfiguration;
 import com.dbidding.auction.event.AuctionEventPublisher;
 import com.dbidding.auction.metrics.AuctionMetrics;
 import com.dbidding.auction.repository.AuctionRepository;
 import com.dbidding.auction.repository.BidRepository;
 import com.dbidding.card.service.CardService;
-import com.dbidding.order.OrderService;
+import com.dbidding.order.service.OrderService;
 import com.dbidding.wallet.service.WalletService;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Clock;
@@ -44,7 +47,7 @@ class BidExecutorProfileTest {
 
     @Test
     void 다른_운영_프로필만_활성화돼도_기본_DbBidExecutor가_등록된다() {
-        contextRunner.withInitializer(ctx -> ctx.getEnvironment().setActiveProfiles("local-sse"))
+        contextRunner.withInitializer(ctx -> ctx.getEnvironment().setActiveProfiles("sse-virtual-threads"))
                 .run(context -> {
                     assertThat(context).hasNotFailed();
                     assertThat(context).hasSingleBean(DbBidExecutor.class);

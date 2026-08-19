@@ -1,6 +1,6 @@
 package com.dbidding.card.service;
 
-import com.dbidding.auction.adapter.CardAuctionAdapter;
+import com.dbidding.auction.adapter.dblock.CardAuctionAdapter;
 import com.dbidding.auction.service.AuctionInsightQueryService;
 import com.dbidding.account.domain.Account;
 import com.dbidding.card.domain.CardMetadata;
@@ -13,9 +13,9 @@ import com.dbidding.card.repository.CardMetadataRepository;
 import com.dbidding.statistic.repository.ItemStatisticRepository;
 import com.dbidding.statistic.repository.ItemDailyStatisticRepository;
 import com.dbidding.statistic.service.StatisticQueryService;
-import com.dbidding.wishlist.Wishlist;
-import com.dbidding.wishlist.WishlistRepository;
-import com.dbidding.wishlist.WishlistService;
+import com.dbidding.wishlist.domain.Wishlist;
+import com.dbidding.wishlist.repository.WishlistRepository;
+import com.dbidding.wishlist.service.WishlistService;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.Duration;

@@ -11,17 +11,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dbidding.auction.domain.Auction;
-import com.dbidding.auction.bid.RedisAuctionCreateExecutor;
-import com.dbidding.auction.bid.RedisAuctionCreateResult;
-import com.dbidding.auction.bid.RedisCardStateReader;
+import com.dbidding.auction.bid.redis.RedisAuctionCreateExecutor;
+import com.dbidding.auction.bid.dto.RedisAuctionCreateResult;
+import com.dbidding.auction.bid.redis.RedisCardStateReader;
 import com.dbidding.auction.domain.AuctionStatus;
 import com.dbidding.auction.dto.AuctionCreateRequest;
 import com.dbidding.auction.metrics.AuctionMetrics;
 import com.dbidding.auction.event.AuctionEventPublisher;
 import com.dbidding.auction.sse.AuctionStreamPublisher;
-import com.dbidding.auction.port.ImageUploadPort;
 import com.dbidding.card.dto.CardResponses.CardSnapshot;
 import com.dbidding.card.service.CardService;
+import com.dbidding.upload.adapter.AuctionImageUploadAdapter;
 import com.dbidding.wallet.service.WalletService;
 import com.dbidding.auction.repository.AuctionImageRepository;
 import com.dbidding.auction.repository.AuctionRepository;
@@ -53,7 +53,7 @@ class AuctionRegistrationContractTest {
     @Mock
     private WalletService walletService;
     @Mock
-    private ImageUploadPort imageUploadPort;
+    private AuctionImageUploadAdapter imageUploadAdapter;
     @Mock
     private CardService cardService;
     @Mock
@@ -72,7 +72,7 @@ class AuctionRegistrationContractTest {
                         auctionImageRepository,
                         bidRepository,
                         walletService,
-                        imageUploadPort,
+                        imageUploadAdapter,
                         auctionEventPublisher,
                         auctionStreamPublisher,
                         cardService,
@@ -245,8 +245,8 @@ class AuctionRegistrationContractTest {
     }
 
     private void stubDefaultImage() {
-        when(imageUploadPort.resolveImages(List.of("upload-token"))).thenReturn(List.of(
-                new ImageUploadPort.ResolvedImage("/auction.png", 0, true)
+        when(imageUploadAdapter.resolveImages(List.of("upload-token"))).thenReturn(List.of(
+                new AuctionImageUploadAdapter.ResolvedImage("/auction.png", 0, true)
         ));
     }
 }
